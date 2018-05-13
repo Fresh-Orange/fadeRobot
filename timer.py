@@ -1,6 +1,6 @@
 import time
-import loginFade
+import publishFade
 
 while True:
-    loginFade.sendWeibo("")
-    time.sleep(60*30)
+    publishFade.send_weibo("")
+    time.sleep(60*30) # 每隔30分钟运行一次

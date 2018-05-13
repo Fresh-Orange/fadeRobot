@@ -4,27 +4,55 @@ import re
 import json
 from bs4 import BeautifulSoup
 from PIL import Image
+import random
+import urllib
 
-def getNewWeibo():
+
+def get_new_weibo():
+    """
+    获得新的微博（不保证不重复，不保证不产生异常）
+    :return: 微博文字，对应的图片路径
+    """
     cookit = {
-        "Cookit": "_T_WM=7f7181e076eb212385a0de6f757604d5; SSOLoginState=1526026483; ALF=1528618483; SCF=ArxL8HhPfaPJydlRX-jAsdYAkb7yQZRLYUSw96YaJM_eB6uSCtkIqIj7xLzshN_KfXwYQzRsSmCEX7cjL5HJ1QY.; SUB=_2A2538SCjDeRhGeNH6lMT8S_FzTWIHXVVGkDrrDV6PUNbktAKLXmkkW1NSshIildba4uCQXPd7IliRSFzJ0nd528s; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9Whdnh1us_LgLSpoQ6FkU4H-5JpX5KzhUgL.Fo-4eK2EeK24So.2dJLoIp7LxKML1KBLBKnLxKqL1hnLBoMf1K2peo2p1Kq4; SUHB=0Lcixb7WTY3g6s; WEIBOCN_FROM=1110006030; M_WEIBOCN_PARAMS=luicode%3D10000011%26lfid%3D102803%26fid%3D102803%26uicode%3D10000011; MLOGIN=1"}
-    datalink = "https://m.weibo.cn/api/container/getIndex?containerid=102803"
+        "Cookit": "_T_WM=3cfa2e469c15b82512c08b1fd741ac1c; ALF=1528621799; SCF=Aqa1yiiIz1eeeiXNlJhf8-e"
+                  "hzQ4bryQBxsOHZcsvagx6D0uG4XsiUKlDmL1e597pGstJhq6j7euQZIaISqpJW-E.; SUB=_2A2538S24De"
+                  "RhGeNH6lMT8S_FzTWIHXVVHbPwrDV6PUJbktANLUf-kW1NSshIioLDSCIoAZOOx8FsTSwvJrE3_mu0; SUB"
+                  "P=0033WrSXqPxfM725Ws9jqgMF55529P9D9Whdnh1us_LgLSpoQ6FkU4H-5JpX5K-hUgL.Fo-4eK2EeK24S"
+                  "o.2dJLoIp7LxKML1KBLBKnLxKqL1hnLBoMf1K2peo2p1Kq4; SUHB=09PNajWAenMeWC; SSOLoginState"
+                  "=1526029800; WEIBOCN_FROM=1110006030; MLOGIN=1; M_WEIBOCN_PARAMS=luicode%3D10000011%"
+                  "26lfid%3D100103type%253D1%2526q%253D%2523%25E5%25BE%25AE%25E5%258D%259A%25E7%2583%25"
+                  "AD%25E7%2582%25B9%2523%26fid%3D100103type%253D61%2526q%253D%2523%25E5%2588%259B%25E9"
+                  "%2580%25A0101%2523%2526t%253D0%26uicode%3D10000011"}
+
+    topics = ['迪丽热巴', '张艺兴', '蔡徐坤','易烊千玺', '陈立农','刘昊然','赵丽颖']
+
+    # 随机选择话题
+    idx = random.randint(0, len(topics)-1)
+    print(idx)
+    topic = topics[idx]
+
+    datalink = "https://m.weibo.cn/api/container/getIndex?containerid=100103type=61&q=#{topic}#&t=0&page=2".format(topic=topic)
+    datalink = urllib.parse.quote(datalink, safe='/:?=')
+    print(datalink)
+
     r = requests.get(datalink, cookies=cookit)
     print(r.headers)
     print(r.encoding)
-    for i in range(15):
-        resjson = r.json()['data']['cards'][i]
+    for i in range(10):
+        resjson = r.json()['data']['cards'][0]
+        resjson = resjson['card_group'][i]
         if resjson.get('mblog', -1) != -1:
-            resjson = resjson['mblog']  # ['text']
-        print(resjson['text'])
+            resjson = resjson['mblog']
+        print(resjson.get('text', '.'))
         is_valid = False
         pic_names = []
         if resjson.get('pics', -1) != -1:
             for pinfo in resjson.get('pics', -1):
                 print(pinfo['large']['url'])
+                # 去掉gif格式的图片
                 if not pinfo['large']['url'].endswith('gif'):
                     short_name = pinfo['large']['url'].split('/')[-1]
-                    save_path = 'F:\\PY\\fadeRobot\\images\\' + short_name
+                    save_path = './images/' + short_name
                     print(save_path)
                     html = requests.get(pinfo['large']['url'])
                     with open(save_path, 'wb') as file:
@@ -32,10 +60,13 @@ def getNewWeibo():
                     is_valid = True
                     pic_names.append(short_name)
             if is_valid:
-                text = re.sub(r'<.*>', '', resjson['text'])
+                # 用正则表达式去掉可能导致安卓端崩溃的字符
+                text = re.sub(r'<.*?>', '', resjson.get('text', '.'))
+                text = re.sub(r'\[.*\]', '', text)
                 return text, pic_names
 
 
 if __name__ == '__main__':
     print("--------------------------")
-    print(getNewWeibo())
+    print(get_new_weibo())
+
