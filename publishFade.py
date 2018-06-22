@@ -103,6 +103,9 @@ def get_weibo():
     while True:
         try:
             text_to_send, images_path = spider.get_new_weibo()
+            if text_to_send == "" and len(images_path) == 0:
+                print('Error: 内容为空')
+                continue
             historys = open('history.txt', 'r', encoding='utf-8').read()
             if historys.count(text_to_send) > 0:
                 print('Error: 内容重复')
@@ -132,6 +135,10 @@ def get_weibo():
             time.sleep(1)
             continue
         except FileExistsError as e:
+            print(e)
+            time.sleep(1)
+            continue
+        except json.JSONDecodeError as e:
             print(e)
             time.sleep(1)
             continue
